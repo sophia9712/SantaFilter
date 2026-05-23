@@ -1,33 +1,42 @@
-name: Build and Release SantaFilter
+name: Build & Release SantaFilter
 
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install pyinstaller customtkinter pystray pillow sounddevice numpy pyrnnoise requests
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller audiolab pyrnnoise
 
-      - name: Build EXE
-        run: pyinstaller --onefile --windowed --name SantaFilter SantaFilter.py
+      - name: Build EXE (onedir)
+        run: |
+          python -m PyInstaller --noconsole --onedir SantaFilter.py
 
-      - name: Release
+      - name: Zip build
+        run: |
+          powershell Compress-Archive -Path dist\SantaFilter\* -DestinationPath SantaFilter.zip
+
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/SantaFilter.exe
-          tag_name: ${{ github.ref }}
-          name: SantaFilter ${{ github.ref }}
+          files: SantaFilter.zip
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SANTAFILTER_TOKEN }}
